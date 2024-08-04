@@ -2,9 +2,7 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"net"
-	"os"
 )
 
 const PORT = 6379
@@ -16,7 +14,9 @@ func main() {
 		fmt.Println(err)
 		return
 	}
+
 	fmt.Println("Listening for connections on:", addr)
+
 	conn, err := l.Accept()
 	if err != nil {
 		fmt.Println(err)
@@ -26,18 +26,14 @@ func main() {
 	defer conn.Close()
 
 	for {
-		buf := make([]byte, 1024)
-
-		// read from client
-		_, err = conn.Read(buf)
+		resp := NewResp(conn)
+		value, err := resp.Read()
 		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			fmt.Println("Error reading from client: ", err.Error())
-			os.Exit(1)
+			fmt.Println("Error reading fro client: ", err)
+			return
 		}
-
+		fmt.Println(value)
+		// write
 		conn.Write([]byte("+PONG\r\n"))
 	}
 }
