@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net"
+	"strings"
 )
 
 const PORT = 6379
@@ -29,12 +30,22 @@ func main() {
 		resp := NewResp(conn)
 		value, err := resp.Read()
 		if err != nil {
-			fmt.Println("Error reading fro client: ", err)
+			fmt.Println("Error reading from client: ", err)
 			return
 		}
-		fmt.Println(value)
 
+		command := strings.ToUpper(value.array[0].bulk)
+		args := value.array[1:]
 		writer := NewWriter(conn)
-		writer.Write(Value{typ: "string", str: "OK"})
+
+		handler, ok := Handlers[command]
+		if !ok {
+			fmt.Println("Invalid command: ", command)
+			writer.Write(Value{typ: "string", str: ""})
+			continue
+		}
+
+		result := handler(args)
+		writer.Write(result)
 	}
 }
