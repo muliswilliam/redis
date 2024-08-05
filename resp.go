@@ -71,11 +71,17 @@ func (r *Resp) Read() (Value, error) {
 	}
 
 	switch _type {
+	case STRING:
+		return r.parseString()
+	case INTEGER:
+		return r.parseInteger()
+	case ERROR:
+		return r.parseError()
 	case ARRAY:
-		return r.readArray()
+		return r.parseArray()
 
 	case BULK:
-		return r.readBulk()
+		return r.parseBulk()
 
 	default:
 		fmt.Printf("Unknown type %v: ", string(_type))
@@ -83,7 +89,48 @@ func (r *Resp) Read() (Value, error) {
 	}
 }
 
-func (r *Resp) readArray() (Value, error) {
+func (r *Resp) parseString() (Value, error) {
+	v := Value{}
+	v.typ = "string"
+
+	line, _, err := r.readLine()
+	if err != nil {
+		return v, err
+	}
+
+	v.str = string(line)
+
+	return v, nil
+}
+
+func (r *Resp) parseInteger() (Value, error) {
+	v := Value{}
+	v.typ = "int"
+
+	i, _, err := r.readInteger()
+	if err != nil {
+		return Value{}, err
+	}
+
+	v.num = i
+
+	return v, nil
+}
+
+func (r *Resp) parseError() (Value, error) {
+	v := Value{}
+	v.typ = "error"
+
+	line, _, err := r.readLine()
+	if err != nil {
+		return Value{}, err
+	}
+	v.str = string(line)
+
+	return v, err
+}
+
+func (r *Resp) parseArray() (Value, error) {
 	v := Value{}
 	v.typ = "array"
 
@@ -107,14 +154,20 @@ func (r *Resp) readArray() (Value, error) {
 	return v, nil
 }
 
-func (r *Resp) readBulk() (Value, error) {
+func (r *Resp) parseBulk() (Value, error) {
 	v := Value{}
-	v.typ = "array"
+	v.typ = "bulk"
 
 	// read length of string
 	len, _, err := r.readInteger()
 	if err != nil {
 		return v, err
+	}
+
+	// check for null bulk string
+	if len == -1 {
+		v.typ = "null"
+		return v, nil
 	}
 
 	bulk := make([]byte, len)
