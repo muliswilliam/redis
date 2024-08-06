@@ -143,3 +143,55 @@ func TestRead(t *testing.T) {
 		})
 	}
 }
+
+func Test_marshalString(t *testing.T) {
+	testCases := []struct {
+		name     string
+		expected []byte
+		value    Value
+	}{
+		{
+			name:     "empty string",
+			value:    Value{str: ""},
+			expected: []byte{'+', '\r', '\n'},
+		}, {
+			name:     "non-empty string",
+			value:    Value{str: "hello"},
+			expected: []byte{'+', 'h', 'e', 'l', 'l', 'o', '\r', '\n'},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := tc.value.marshalString()
+			assert.Equal(t, result, tc.expected)
+		})
+	}
+}
+
+func Test_marsallArray(t *testing.T) {
+	{
+		testCases := []struct {
+			name     string
+			expected []byte
+			value    Value
+		}{
+			{
+				name:     "empty string",
+				value:    Value{str: ""},
+				expected: []byte{'+', '\r', '\n'},
+			}, {
+				name:     "non-empty string",
+				value:    Value{str: "hello"},
+				expected: []byte{'+', 'h', 'e', 'l', 'l', 'o', '\r', '\n'},
+			},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				result := tc.value.marshalArray()
+				assert.Equal(t, result, tc.expected)
+			})
+		}
+	}
+}
