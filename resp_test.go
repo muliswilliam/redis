@@ -164,7 +164,7 @@ func Test_marshalString(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			result := tc.value.marshalString()
-			assert.Equal(t, result, tc.expected)
+			assert.Equal(t, tc.expected, result)
 		})
 	}
 }
@@ -177,20 +177,28 @@ func Test_marsallArray(t *testing.T) {
 			value    Value
 		}{
 			{
-				name:     "empty string",
-				value:    Value{str: ""},
-				expected: []byte{'+', '\r', '\n'},
-			}, {
-				name:     "non-empty string",
-				value:    Value{str: "hello"},
-				expected: []byte{'+', 'h', 'e', 'l', 'l', 'o', '\r', '\n'},
+				name:     "Test empty array",
+				value:    Value{typ: "array", array: []Value{}},
+				expected: []byte{'*', '0', '\r', '\n'},
+			},
+			{
+				name:     "Test array with one element",
+				value:    Value{typ: "array", array: []Value{{typ: "string", str: "hello"}}},
+				expected: append([]byte{'*', '1', '\r', '\n'}, []byte{'+', 'h', 'e', 'l', 'l', 'o', '\r', '\n'}...),
+			},
+			{
+				name:  "Test array with multiple elements",
+				value: Value{typ: "array", array: []Value{{typ: "string", str: "hello"}, {typ: "string", str: "world"}}},
+				expected: append([]byte{'*', '2', '\r', '\n'},
+					append([]byte{'+', 'h', 'e', 'l', 'l', 'o', '\r', '\n'},
+						[]byte{'+', 'w', 'o', 'r', 'l', 'd', '\r', '\n'}...)...),
 			},
 		}
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
-				result := tc.value.marshalArray()
-				assert.Equal(t, result, tc.expected)
+				result := tc.value.Marshal()
+				assert.Equal(t, tc.expected, result)
 			})
 		}
 	}
