@@ -151,3 +151,52 @@ func TestHGetHandler(t *testing.T) {
 		})
 	}
 }
+
+func TestHGetAllHandler(t *testing.T) {
+	// Reset the HSETs map before each test
+	originalHSETs := HSETs
+	HSETs = map[string]map[string]string{}
+	defer func() { HSETs = originalHSETs }()
+
+	// Initialize some data for testing
+	HSETs["hash1"] = map[string]string{"field1": "value1", "field2": "value2"}
+
+	// Define the test cases
+	testCases := []struct {
+		name     string
+		args     []Value
+		expected Value
+	}{
+		{
+			name: "correct number of arguments, hash exists",
+			args: []Value{{bulk: "hash1"}},
+			expected: Value{
+				typ: "array",
+				array: []Value{
+					{typ: "bulk", bulk: "field1"},
+					{typ: "bulk", bulk: "value1"},
+					{typ: "bulk", bulk: "field2"},
+					{typ: "bulk", bulk: "value2"},
+				},
+			},
+		},
+		{
+			name:     "correct number of arguments, hash does not exist",
+			args:     []Value{{bulk: "hash2"}},
+			expected: Value{typ: "null"},
+		},
+		{
+			name:     "incorrect number of arguments",
+			args:     []Value{},
+			expected: Value{typ: "error", str: "ERR wrong number of arguments for HGETALL command"},
+		},
+	}
+
+	// Execute each test case
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := Handlers["HGETALL"](tc.args)
+			assert.Equal(t, tc.expected, result)
+		})
+	}
+}
