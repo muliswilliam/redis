@@ -82,3 +82,72 @@ func TestGetHandler(t *testing.T) {
 		assert.Equal(t, expected, result)
 	})
 }
+
+func TestHSetHandler(t *testing.T) {
+	originalHSETs := HSETs
+	HSETs = map[string]map[string]string{}
+
+	defer func() { HSETs = originalHSETs }()
+
+	testCases := []HandlerTestCase{
+		{
+			name:     "correct number of args",
+			args:     []Value{{bulk: "myhash"}, {bulk: "field1"}, {bulk: "Hello"}},
+			expected: Value{typ: "string", str: "OK"},
+		},
+		{
+			name:     "incorrect number of args",
+			args:     []Value{{bulk: "myhash"}},
+			expected: Value{typ: "error", str: "ERR wrong number of arguments for HSET command"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := Handlers["HSET"](tc.args)
+			assert.Equal(t, tc.expected, result)
+		})
+	}
+}
+
+func TestHGetHandler(t *testing.T) {
+	originalHSETs := HSETs
+	HSETs = map[string]map[string]string{}
+	defer func() { HSETs = originalHSETs }()
+
+	HSETs["hash1"] = map[string]string{"field1": "value1"}
+
+	testCases := []struct {
+		name     string
+		args     []Value
+		expected Value
+	}{
+		{
+			name:     "correct number of arguments, field exists",
+			args:     []Value{{bulk: "hash1"}, {bulk: "field1"}},
+			expected: Value{typ: "bulk", bulk: "value1"},
+		},
+		{
+			name:     "correct number of arguments, field does not exist",
+			args:     []Value{{bulk: "hash1"}, {bulk: "field2"}},
+			expected: Value{typ: "null"},
+		},
+		{
+			name:     "correct number of arguments, hash does not exist",
+			args:     []Value{{bulk: "hash2"}, {bulk: "field1"}},
+			expected: Value{typ: "null"},
+		},
+		{
+			name:     "incorrect number of arguments",
+			args:     []Value{{bulk: "hash1"}},
+			expected: Value{typ: "error", str: "ERR wrong number of arguments for HSET command"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := Handlers["HGET"](tc.args)
+			assert.Equal(t, tc.expected, result)
+		})
+	}
+}
