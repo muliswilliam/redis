@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net"
 	"strings"
 )
@@ -14,6 +15,31 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 		return
+	}
+
+	// create AOFju
+	aof, err := NewAof("database.aof")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	defer aof.Close()
+
+	// read AOF and replace commands
+	err = aof.Read(func(value Value) {
+		command := strings.ToUpper(value.array[0].bulk)
+		args := value.array[1:]
+
+		handler, ok := Handlers[command]
+		if !ok {
+			fmt.Println("Invalid command: ", command)
+			return
+		}
+		handler(args)
+	})
+	if err != nil {
+		log.Println("Error reading AOF: ", err)
 	}
 
 	fmt.Println("Listening for connections on:", addr)
@@ -41,11 +67,24 @@ func main() {
 		handler, ok := Handlers[command]
 		if !ok {
 			fmt.Println("Invalid command: ", command)
-			writer.Write(Value{typ: "string", str: ""})
+			err := writer.Write(Value{typ: "string", str: ""})
+			if err != nil {
+				log.Println("Errr writing value: ", err)
+			}
 			continue
 		}
 
+		if command == "SET" || command == "HSET" {
+			err := aof.Write(value)
+			if err != nil {
+				log.Println("Error writing to AOF: ", err)
+			}
+		}
+
 		result := handler(args)
-		writer.Write(result)
+		err = writer.Write(result)
+		if err != nil {
+			log.Println("Errr writing value: ", err)
+		}
 	}
 }
