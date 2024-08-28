@@ -1,3 +1,4 @@
 redis
 main
 *.out
+database.aof
