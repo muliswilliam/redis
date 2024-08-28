@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"strings"
@@ -56,7 +57,9 @@ func main() {
 		resp := NewResp(conn)
 		value, err := resp.Read()
 		if err != nil {
-			fmt.Println("Error reading from client: ", err)
+			if err != io.EOF {
+				fmt.Println("Error reading from client: ", err)
+			}
 			return
 		}
 
