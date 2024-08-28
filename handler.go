@@ -17,6 +17,7 @@ var (
 
 var Handlers = map[string]func([]Value) Value{
 	"PING":    ping,
+	"COMMAND": command,
 	"SET":     set,
 	"GET":     get,
 	"HSET":    hset,
@@ -30,6 +31,11 @@ func ping(args []Value) Value {
 	}
 
 	return Value{typ: "string", str: args[0].bulk}
+}
+
+func command(args []Value) Value {
+	// TODO: return a list of supported command
+	return Value{typ: "string", str: ""}
 }
 
 func set(args []Value) Value {
