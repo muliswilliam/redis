@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -67,7 +68,10 @@ func (aof *Aof) Read(fn func(value Value)) error {
 	aof.mu.Lock()
 	defer aof.mu.Unlock()
 
-	aof.file.Seek(0, io.SeekStart)
+	_, err := aof.file.Seek(0, io.SeekStart)
+	if err != nil {
+		fmt.Println("AOF seek failed: ", err)
+	}
 
 	reader := NewResp(aof.file)
 
