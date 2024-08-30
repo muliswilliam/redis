@@ -2,3 +2,4 @@ redis
 main
 *.out
 database.aof
+.idea
