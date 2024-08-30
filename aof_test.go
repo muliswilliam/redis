@@ -14,7 +14,7 @@ func TestNewAof(t *testing.T) {
 	testFilePath := filepath.Join(tempDir, "test.aof")
 	aof, err := NewAof(testFilePath)
 
-	assert.Nil(t, err, "Expected no error when instantiating Aof")
+	assert.NoError(t, err, "Expected no error when instantiating Aof")
 	assert.NotNil(t, aof)
 }
 
@@ -23,12 +23,12 @@ func TestNewAof_FileCreation(t *testing.T) {
 	testFilePath := filepath.Join(tempDir, "test.aof")
 
 	aof, err := NewAof(testFilePath)
-	assert.Nil(t, err, "Expected no error creating AOF file")
+	assert.NoError(t, err, "Expected no error creating AOF file")
 	defer aof.file.Close()
 
 	// test if file exists
 	_, err = os.Stat(testFilePath)
-	assert.Nil(t, err, "Expected file to be created, but it does not exist")
+	assert.NoError(t, err, "Expected file to be created, but it does not exist")
 }
 
 func TestNewAof_ErrorHandling(t *testing.T) {
@@ -42,8 +42,8 @@ func TestNewAof_FileSync(t *testing.T) {
 	testFilePath := filepath.Join(tempDir, "database.aof")
 
 	aof, err := NewAof(testFilePath)
-	assert.Nil(t, err, "Expected no error creating AOF file")
-	// defer aof.file.Close()
+	assert.NoError(t, err, "Expected no error creating AOF file")
+	defer aof.Close()
 
 	// modify file and wait for a second to make sure it sync
 	aof.mu.Lock()
@@ -54,7 +54,7 @@ func TestNewAof_FileSync(t *testing.T) {
 	time.Sleep(2 * time.Second)
 
 	stat, err := os.Stat(testFilePath)
-	assert.Nil(t, err, "Expected no error read file stats")
+	assert.NoError(t, err, "Expected no error reading file stats")
 
 	assert.WithinDuration(t, time.Now(), stat.ModTime(), 3*time.Second, "Expected file to be synced with the last second")
 }
