@@ -18,7 +18,9 @@ func main() {
 		return
 	}
 
-	// create AOFju
+	defer l.Close()
+
+	// create AOF
 	aof, err := NewAof("database.aof")
 	if err != nil {
 		fmt.Println(err)
@@ -45,22 +47,33 @@ func main() {
 
 	fmt.Println("Listening for connections on:", addr)
 
-	conn, err := l.Accept()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	for {
+		conn, err := l.Accept()
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
 
+		go handleConnection(conn, aof)
+	}
+}
+
+// handle each client connection
+func handleConnection(conn net.Conn, aof *Aof) {
 	defer conn.Close()
 
 	for {
 		resp := NewResp(conn)
 		value, err := resp.Read()
 		if err != nil {
-			if err != io.EOF {
-				fmt.Println("Error reading from client: ", err)
+			if err == io.EOF {
+				// Client has disconnected
+				fmt.Println("Client disconnected")
+			} else {
+				// Other errors
+				fmt.Println("Error reading from client:", err)
 			}
-			return
+			return // Exit the goroutine
 		}
 
 		command := strings.ToUpper(value.array[0].bulk)
@@ -72,7 +85,7 @@ func main() {
 			fmt.Println("Invalid command: ", command)
 			err := writer.Write(Value{typ: "string", str: ""})
 			if err != nil {
-				log.Println("Errr writing value: ", err)
+				log.Println("Error writing value: ", err)
 			}
 			continue
 		}
@@ -87,7 +100,7 @@ func main() {
 		result := handler(args)
 		err = writer.Write(result)
 		if err != nil {
-			log.Println("Errr writing value: ", err)
+			log.Println("Error writing value: ", err)
 		}
 	}
 }
